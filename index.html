@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Yvelle's Little Life</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom, #f0f4f8, #e0eafc);
+      color: #333;
+    }
+    main {
+      position: absolute;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      max-width: 800px;
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    p {
+      line-height: 1.6;
+      text-indent: 2em;
+    }
+    footer {
+      text-align: center;
+      font-size: 0.8rem;
+      margin-top: 2rem;
+      color: #888;
+    }
+    canvas {
+      display: block;
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <main>
+    <h1>✨ 欢迎来到我的小站 ✨</h1>
+    <p>这里记录着我的一些生活片段、小想法，还有偶尔的技术研究。</p>
+    <p>希望每一次回顾，都是一次温柔的遇见。</p>
+    <p>🌸 最近的我：正在努力学习编程，偶尔也看看风景、拍拍花花。</p>
+    <p>📚 想写写我的成长日记，也许还会贴一些代码片段、读过的书、遇到的人。</p>
+
+    <footer>© 2025 Yvelle • Made with ❤️ </footer>
+  </main>
+
+
+  <canvas id="live2dCanvas"></canvas>
+  <!-- PixiJS -->
+  <script src="https://cdn.jsdelivr.net/npm/pixi.js@6.5.8/dist/browser/pixi.min.js"></script>
+
+  <!-- Cubism Core -->
+  <script src="./lib/live2dcubismcore.min.js"></script>
+
+  <!-- pixi-live2d-display -->
+  <script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display/dist/cubism4.min.js"></script>
+
+ 
+  <script>
+    (async function () {
+      const app = new PIXI.Application({
+        view: document.getElementById('live2dCanvas'),
+        autoStart: true,
+        resizeTo: window,
+        backgroundAlpha: 0,
+      });
+  
+      const model = await PIXI.live2d.Live2DModel.from('./Resources/mikumiku/mikumiku.model3.json');
+  
+      model.scale.set(0.2); 
+      model.anchor.set(0.0, 1.0); 
+      model.x = 0; 
+      model.y = app.renderer.height; 
+  
+      app.stage.addChild(model);
+      window.addEventListener("resize", () => {
+        model.y = app.renderer.height;
+      });
+
+      model.on('hit', (hitAreas) => {
+        if (hitAreas.includes('Body')) {
+          model.motion('Tap@Body');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
