@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yvelle's Little Life</title>
   <style>
     html, body {
@@ -11,6 +12,8 @@
       font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(to bottom, #f0f4f8, #e0eafc);
       color: #333;
+      width: 100%;
+      height: 100%;
     }
     main {
       position: absolute;
@@ -23,6 +26,7 @@
       border-radius: 16px;
       padding: 2rem;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      z-index: 1;
     }
     h1 {
       text-align: center;
@@ -40,15 +44,62 @@
     }
     canvas {
       display: block;
-      position: absolute;
+      position: fixed;
       left: 0;
       bottom: 0;
+      width: 100%;
+      height: 100%;
       pointer-events: none;
+      z-index: 0;
+    }
+    .toggle-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.9);
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+    .toggle-btn:hover {
+      background: rgba(255, 255, 255, 1);
+      transform: translateY(-2px);
+    }
+    .toggle-btn.hidden {
+      opacity: 0.5;
+    }
+    .model-selector {
+      position: fixed;
+      bottom: 20px;
+      right: 140px;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.9);
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+      z-index: 1000;
+      font-family: inherit;
+    }
+    .model-selector:hover {
+      background: rgba(255, 255, 255, 1);
+      transform: translateY(-2px);
     }
   </style>
 </head>
 <body>
 
+  <select class="model-selector" id="modelSelector" title="选择模型" aria-label="选择模型">
+    <option value="mikumiku">Miku Miku</option>
+    <option value="aniya">ANIYA</option>
+    <option value="frieren">Frieren</option>
+  </select>
+  <button class="toggle-btn" id="modelToggle">隐藏模型</button>
   <main>
     <h1>✨ 欢迎来到我的小站 ✨</h1>
     <p>这里记录着我的一些生活片段、小想法，还有偶尔的技术研究。</p>
@@ -78,23 +129,87 @@
         autoStart: true,
         resizeTo: window,
         backgroundAlpha: 0,
+        width: window.innerWidth,
+        height: window.innerHeight,
       });
   
-      const model = await PIXI.live2d.Live2DModel.from('./Resources/mikumiku/mikumiku.model3.json');
+      let model;
+      const modelPaths = {
+        mikumiku: './Resources/mikumiku/mikumiku.model3.json',
+        aniya: './Resources/ANIYA-walk/ANIYA.model3.json',
+        frieren: './Resources/Frieren/Frieren.model3.json'
+      };
   
-      model.scale.set(0.2); 
-      model.anchor.set(0.0, 1.0); 
-      model.x = 0; 
-      model.y = app.renderer.height; 
+      async function loadModel(modelPath) {
+        if (model) {
+          app.stage.removeChild(model);
+        }
+        model = await PIXI.live2d.Live2DModel.from(modelPath);
+        
+        // 根据不同的模型设置不同的缩放和位置
+        if (modelPath.includes('Frieren')) {
+          model.scale.set(0.08); // Frieren 模型使用更小的缩放
+          model.x = 0; // 放在左下角
+          model.y = app.renderer.height + 100; // 调整垂直位置
+        } else if (modelPath.includes('ANIYA')) {
+          model.scale.set(0.05); // ANIYA 模型使用较小的缩放
+          model.x = 0;
+          model.y = app.renderer.height;
+        } else {
+          model.scale.set(0.15); // 其他模型保持原来的缩放
+          model.x = 0;
+          model.y = app.renderer.height;
+        }
+        
+        model.anchor.set(0.0, 1.0);
+        app.stage.addChild(model);
+
+        model.on('hit', (hitAreas) => {
+          if (hitAreas.includes('Body')) {
+            model.motion('Tap@Body');
+          }
+        });
+      }
   
-      app.stage.addChild(model);
-      window.addEventListener("resize", () => {
-        model.y = app.renderer.height;
+      // 初始加载默认模型
+      await loadModel(modelPaths.mikumiku);
+  
+      // 添加切换按钮功能
+      const toggleBtn = document.getElementById('modelToggle');
+      toggleBtn.addEventListener('click', () => {
+        if (model.visible) {
+          model.visible = false;
+          toggleBtn.textContent = '显示模型';
+          toggleBtn.classList.add('hidden');
+        } else {
+          model.visible = true;
+          toggleBtn.textContent = '隐藏模型';
+          toggleBtn.classList.remove('hidden');
+        }
+      });
+  
+      // 添加模型选择功能
+      const modelSelector = document.getElementById('modelSelector');
+      modelSelector.addEventListener('change', async () => {
+        const selectedModel = modelSelector.value;
+        await loadModel(modelPaths[selectedModel]);
+        if (!model.visible) {
+          model.visible = true;
+          toggleBtn.textContent = '隐藏模型';
+          toggleBtn.classList.remove('hidden');
+        }
       });
 
-      model.on('hit', (hitAreas) => {
-        if (hitAreas.includes('Body')) {
-          model.motion('Tap@Body');
+      // 添加窗口大小改变事件监听
+      window.addEventListener("resize", () => {
+        if (model) {
+          if (modelPaths.frieren.includes(model.internalModel.settings.model)) {
+            model.y = app.renderer.height + 150;
+          } else if (modelPaths.aniya.includes(model.internalModel.settings.model)) {
+            model.y = app.renderer.height;
+          } else {
+            model.y = app.renderer.height;
+          }
         }
       });
     })();
